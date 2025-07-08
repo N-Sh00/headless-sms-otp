@@ -17,8 +17,8 @@ import java.util.Map;
  * Thin façade that delegates to our SmsOtpAuthenticator so that the mobile app
  * can call clean JSON endpoints:
  *
- *  POST /ext/sms/init    { phone_number, client_id, code_challenge, state }
- *  POST /ext/sms/confirm { phone_number, otp }
+ *  POST /sms/init    { phone_number, client_id, code_challenge, state }
+ *  POST /sms/confirm { phone_number, otp }
  *
  * The first call sends the OTP; the second one completes the Browser flow and
  * returns the real OAuth2 authorization code in JSON – all with NO WebView.

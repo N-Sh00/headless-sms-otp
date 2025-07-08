@@ -52,6 +52,20 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- AutoService for compile-time SPI file generation -->
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service-annotations</artifactId>
+            <version>1.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
+
         <!-- Optional: only if you want to use Apache HttpClient -->
         <!--
         <dependency>
@@ -75,6 +89,7 @@
                         <goals><goal>shade</goal></goals>
                         <configuration>
                             <transformers>
+                                <!-- merges all META-INF/services files -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
@@ -85,10 +100,26 @@
                 </executions>
             </plugin>
 
-            <!-- Compiler plugin -->
+            <!-- Compiler plugin with AutoService annotation processing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <!-- enables @AutoService to generate SPI files -->
+                        <path>
+                            <groupId>com.google.auto.service</groupId>
+                            <artifactId>auto-service</artifactId>
+                            <version>1.0.1</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <!-- explicit processor hint (optional) -->
+                    <compilerArgs>
+                        <arg>-processor</arg>
+                        <arg>com.google.auto.service.processor.AutoServiceProcessor</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>

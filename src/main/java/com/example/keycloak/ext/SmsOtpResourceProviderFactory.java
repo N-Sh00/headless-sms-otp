@@ -1,5 +1,6 @@
 package com.example.keycloak.ext;
 
+import com.google.auto.service.AutoService;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.services.resource.RealmResourceProvider;
@@ -7,6 +8,7 @@ import org.keycloak.Config;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.jboss.logging.Logger;
 
+@AutoService(RealmResourceProviderFactory.class)
 public class SmsOtpResourceProviderFactory
         implements RealmResourceProviderFactory {
 

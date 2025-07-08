@@ -1,5 +1,6 @@
 package com.example.keycloak.auth;
 
+import com.google.auto.service.AutoService;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.AuthenticatorFactory;
@@ -12,6 +13,7 @@ import org.keycloak.provider.ProviderConfigProperty;
 import java.util.Collections;
 import java.util.List;
 
+@AutoService(AuthenticatorFactory.class)
 public class SmsOtpAuthenticatorFactory implements AuthenticatorFactory {
 
     private static final Logger LOG = Logger.getLogger(SmsOtpAuthenticatorFactory.class);

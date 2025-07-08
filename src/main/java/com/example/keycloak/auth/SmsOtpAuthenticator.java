@@ -1,6 +1,5 @@
 package com.example.keycloak.auth;
 
-import com.example.keycloak.provider.SmsIrSenderProvider;
 import com.example.keycloak.provider.SmsSenderProvider;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
@@ -77,18 +76,6 @@ public class SmsOtpAuthenticator implements Authenticator {
         session.setAuthNote(NOTE_TIMESTAMP, Long.toString(Instant.now().getEpochSecond()));
         session.setAuthNote(PARAM_PHONE, phone);
 
-        // --- TEMP: manual factory test to force-load the provider
-        LOG.info("🛠️ Forcing load of SmsIrSenderProviderFactory manually");
-
-        try {
-            SmsSenderProvider manual = new SmsIrSenderProvider((KeycloakSession) session, null);
-            boolean result = manual.send("+989123456789", "Hello from manual instantiation");
-            LOG.info("🧪 Manual SMS send returned: " + result);
-        } catch (Exception e) {
-            LOG.error("Manual send failed", e);
-        }
-
-
         SmsSenderProvider sms = ctx.getSession().getProvider(SmsSenderProvider.class, "sms-ir");
         if (sms == null) {
             LOG.error("sendCodeAndChallenge() - SmsSenderProvider is null!");
@@ -96,7 +83,7 @@ public class SmsOtpAuthenticator implements Authenticator {
                     "No SMS provider registered for id \"sms-ir\"", Response.Status.INTERNAL_SERVER_ERROR);
         }
         LOG.info("sendCodeAndChallenge() - sending SMS");
-        boolean ok = sms.send(phone, "کد ورود شما: " + otp);
+        boolean ok = sms.send(phone, otp);
 
         if (!ok) {
             LOG.error("sendCodeAndChallenge() - SMS send failed!");
@@ -194,7 +181,7 @@ public class SmsOtpAuthenticator implements Authenticator {
                     "No SMS provider registered for id \"sms-ir\"", Response.Status.INTERNAL_SERVER_ERROR);
         }
         LOG.info("sendCodeForSession() - sending SMS");
-        boolean ok = sms.send(phone, "کد ورود شما: " + otp);
+                boolean ok = sms.send(phone, otp);
         if (!ok) {
             LOG.error("sendCodeForSession() - SMS send failed!");
             throw new ErrorResponseException("sms_failed",
