@@ -26,7 +26,7 @@ public class SmsIrSenderProvider implements SmsSenderProvider {
     public SmsIrSenderProvider() {
         LOG.info("SmsIrSenderProvider: constructor called");
         this.http = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
+                .connectTimeout(Duration.ofSeconds(30))
                 .build();
 
         // Read from environment, not Config.Scope
@@ -54,7 +54,7 @@ public class SmsIrSenderProvider implements SmsSenderProvider {
             byte[] body = JSON.writeValueAsBytes(payload);
 
             HttpRequest req = HttpRequest.newBuilder(SMSIR_URI)
-                    .timeout(Duration.ofSeconds(5))
+                    .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", MediaType.APPLICATION_JSON)
                     .header("Accept",       "text/plain")
                     .header("x-api-key",    apiKey)          // moved to header

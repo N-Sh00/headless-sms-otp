@@ -52,6 +52,8 @@ public class SmsOtpEndpoint {
         String clientId      = json.get("client_id");
         String codeChallenge = json.get("code_challenge");
         String state         = json.get("state");
+        String redirectUri   = json.getOrDefault("redirect_uri",
+                "com.example.dev://callback");
 
         if (phone == null || clientId == null || codeChallenge == null) {
             LOG.errorf("/init: missing params, phone=%s, clientId=%s, codeChallenge=%s", phone, clientId, codeChallenge);
@@ -63,8 +65,9 @@ public class SmsOtpEndpoint {
         // Create a fresh authentication session (1 tab == 1 transaction)
         LOG.infof("/init: creating authentication session for clientId=%s", clientId);
         AuthenticationSessionModel authSession =
-                SmsOtpSessionHelper.createAuthSession(session, clientId, codeChallenge, state);
+                SmsOtpSessionHelper.createAuthSession(session, clientId, codeChallenge, state, redirectUri);
 
+        authSession.setRedirectUri(redirectUri);
         // Delegate “send OTP” to the authenticator – same method, no duplication
         LOG.infof("/init: sending code for phone=%s", phone);
         SmsOtpAuthenticator.sendCodeForSession(session, authSession, phone);
