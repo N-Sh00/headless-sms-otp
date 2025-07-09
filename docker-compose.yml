@@ -35,8 +35,14 @@ services:
       SMSIR_API_KEY:      "5gzpILYx5cjvsrpf1OUwa7b5iPjR7DhpluRZ2d67CSnq1Cxf"
       SMSIR_TEMPLATE_ID:  "647911"
       SMSIR_LINE_NUMBER:  "30002108001237"
+
+      KC_LOG_LEVEL: DEBUG
+      DEBUG: "true"
+      DEBUG_PORT: "*:8787"
+      DEBUG_SUSPEND: "n"
     ports:
       - "8080:8080"          # http://localhost:8080
+      - "8787:8787"   # Debug port
     healthcheck:
       test: ["CMD", "/opt/keycloak/bin/kc.sh", "health", "check"]
       interval: 10s
