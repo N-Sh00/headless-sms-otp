@@ -3,6 +3,8 @@ package com.example.keycloak.ext;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.models.*;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
+import org.keycloak.protocol.oidc.utils.OAuth2Code;
+import org.keycloak.protocol.oidc.utils.OAuth2CodeParser;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.managers.AuthenticationSessionManager;
 import org.keycloak.services.managers.ClientSessionCode;
@@ -100,15 +102,64 @@ final class SmsOtpSessionHelper {
         return authSession;
     }
 
-    /** Issues the final OAuth2 authorisation-code string (Keycloak 26 style). */
+    /** Issues the final OAuth2 authorisation-code string (Keycloak 26+ style). */
     static String issueCode(KeycloakSession session, AuthenticationSessionModel authSession) {
-        ClientSessionCode<AuthenticationSessionModel> csc =
-                new ClientSessionCode<>(session, session.getContext().getRealm(), authSession);
+        RealmModel realm = session.getContext().getRealm();
+        ClientModel client = authSession.getClient();
+        UserSessionProvider usp = session.sessions();
 
-        // ① random part (and saved into authSession by ClientSessionCode)
+        // 1️⃣ Create a fresh User-Session with the correct signature
+        UserSessionModel userSession = usp.createUserSession(
+                null, // id will be generated
+                realm,
+                authSession.getAuthenticatedUser(),
+                authSession.getAuthenticatedUser().getUsername(), // loginUsername
+                session.getContext().getConnection().getRemoteAddr(), // ipAddress
+                "sms", // authMethod from your OTP flow
+                false, // rememberMe
+                null, // brokerSessionId
+                null, // brokerUserId
+                UserSessionModel.SessionPersistenceState.PERSISTENT // persistenceState
+        );
+        userSession.setNote("auth_method", authSession.getClientNote("auth_method"));
+
+        // 2️⃣ Create and persist a Client-Session
+        String redirectUri = authSession.getRedirectUri();
+        if (redirectUri == null) {
+            LOG.warn("Redirect URI is null, using client's default");
+            redirectUri = client.getRootUrl() + client.getBaseUrl(); // Fallback
+        }
+        AuthenticatedClientSessionModel clientSession = usp.createClientSession(
+                realm,
+                client,
+                userSession
+        );
+        clientSession.setRedirectUri(redirectUri); // Set redirectUri after creation
+        authSession.getClientNotes().forEach(clientSession::setNote);
+
+        // 3️⃣ Persist and return a 3-part code using OAuth2CodeParser
+        ClientSessionCode<AuthenticationSessionModel> csc = new ClientSessionCode<>(session, realm, authSession);
         String random = csc.getOrGenerateCode();
+        String issuer = session.getContext().getUri().getBaseUri().toString() + "/realms/" + realm.getName();
+        String audience = client.getId();
+        String subject = userSession.getUser().getId();
+        String scope = authSession.getClientNote("scope") != null ? authSession.getClientNote("scope") : "openid";
+        String issuedFor = client.getId(); // Likely the client ID
+        String nonce = authSession.getClientNote("nonce") != null ? authSession.getClientNote("nonce") : null; // Optional
+        String sessionState = userSession.getId();               // <-- correct value
+        OAuth2Code oAuth2Code = new OAuth2Code(
+                random,
+                realm.getAccessCodeLifespan(),
+                issuer,
+                audience,
+                subject,
+                sessionState,
+                scope,
+                issuedFor,
+                nonce);
 
-        // ② prefix with root-session-id so the token-endpoint can locate it
-        return authSession.getParentSession().getId() + "." + random;
+        String code = OAuth2CodeParser.persistCode(session, clientSession, oAuth2Code);
+        LOG.infof("issueCode(): issued code=%s", code);
+        return code;
     }
 }
